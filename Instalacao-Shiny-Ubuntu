@@ -1,0 +1,63 @@
+#https://marcusnunes.me/posts/como-instalar-o-shiny-em-seu-proprio-servidor/
+
+#Alguns pacotes do R precisarão de programas especiais para serem instalados. Estes programas são instalados da seguinte maneira:
+sudo apt install -y build-essential libcurl4-openssl-dev libxml2-dev openjdk-8-jdk git libssl-dev
+
+#Além disso, o java exige algumas configurações extras que devem ser realizadas da seguinte maneira:
+export LD_LIBRARY_PATH=/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/amd64/server
+sudo R CMD javareconf
+
+#Por fim, caso seu servidor tenha pouco espaço em disco, é preciso atualizar o local em que os pacotes do R serão instalados. Para fazer isso, abra o arquivo Renviron com o seguinte comando:
+sudo nano /usr/lib/R/etc/Renviron
+
+#Após o editor de texto estar aberto, procure a primeira linha abaixo e comente-a, colocando o caractere # na sua frente. Em seguida, copie e cole a instrução R_LIBS_USER=${R_LIBS_USER-‘~/Library/R/3.5/library’} logo abaixo. No final ,é isto que deve estar presente no arquivo:
+#R_LIBS_USER=${R_LIBS_USER-‘~/R/x86_64-pc-linux-gnu-library/3.0’}
+R_LIBS_USER=${R_LIBS_USER-‘~/Library/R/3.5/library’}
+
+#Com o R configurado, agora é hora de iniciar o programa como usuário root para instalar pacotes para todos os usuários. Rode
+sudo -i R
+
+#para fazer isto. Vamos instalar alguns pacotes da maneira como sempre foi feito no R:
+install.packages(c("shiny", "tidyverse", "devtools"), 
+  repos = "https://cran.rstudio.com/",
+  dependencies=TRUE)
+#Estou colocando repos="https://cran.rstudio.com/" como repositório porque já vi alguns usuários reportarem que tiveram problemas ao instalar o shiny sem fazer isso.
+
+#Em seguida, devemos deixar a pasta dos pacotes legível para o shiny. Para saber que pasta é esta, rode o comando abaixo no R:
+.libPaths() # /usr/local/lib/R/site-library é o meu resultado; isto pode variar
+#Para deixar a pasta dos pacotes legível para o shiny, saia do R e rode o seguinte comando no terminal:
+
+sudo chmod 777 /usr/lib/R/site-library # lembre-se de alterar o que vem depois de 777 com o resultado de .libPaths()
+
+##############################
+# Instalação do shiny server #
+##############################
+#Finalmente, podemos instalar o servidor do shiny. O endereço de download abaixo pode estar desatualizado no momento em que este post está sendo lido. Visite este site para obter a versão mais recente do servidor.
+#Site: https://posit.co/download/shiny-server/
+sudo apt install -y gdebi-core
+wget https://download3.rstudio.org/ubuntu-18.04/x86_64/shiny-server-1.5.22.1017-amd64.deb
+sudo gdebi shiny-server-1.5.22.1017-amd64.deb
+
+#Rode o comando abaixo para permitir que outros usuários vejam seus apps:
+sudo chmod -R 777 /srv
+#Por fim, teste o seu novo servidor em um browser, substituindo o ip abaixo pelo ip ou domínio do seu site:
+
+127.0.0.1:3838
+
+#Manutenção do Servidor 
+Para substituir a porta do servidor e não ter que ficar digitando a porta de acesso toda vez que desejar acessar um app, rode
+sudo nano /etc/shiny-server/shiny-server.conf
+#Editar e salvar com Ctrl+O
+
+#Dentro do editor, altere a linha
+listen 3838;
+#para
+listen 80;
+
+#Reinicie o servidor do shiny:
+sudo systemctl restart shiny-server
+
+#Para verificar seu status, isto é, para checar se ele está rodando de fato, rode
+sudo systemctl status shiny-server
+
+
